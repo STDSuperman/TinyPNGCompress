@@ -1,0 +1,89 @@
+{
+	"name": "Mercurius",
+	"version": "1.0.0",
+	"description": "解放双手，自动使用tinypng进行压缩",
+	"main": "app/main/index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1",
+		"start": "concurrently \"npm run start:render\" \"wait-on http://localhost:8080 && npm run start:main\"",
+		"start:render": "cd app/renderer/src/main && npm run serve",
+		"start:main": "electron .",
+		"build": "cd app/renderer/src/main && npm run build",
+		"pack:win": "npm run build && cross-env NPM_CONFIG_ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder build --win --ia32",
+		"postinstall": "electron-builder install-app-deps"
+	},
+	"build": {
+		"appId": "com.geektime.mercurius",
+		"productName": "Mercurius",
+		"files": "app",
+		"asar": false,
+		"extraFiles": [
+			"app/renderer/**/src"
+		],
+		"directories": {
+			"buildResources": "resource",
+			"output": "release"
+		},
+		"copyright": "Copyright © 2020 dragon",
+		"mac": {
+			"target": [
+				"dmg",
+				"zip"
+			],
+			"icon": "resources/icon.icns"
+		},
+		"dmg": {
+			"background": "resources/background.png",
+			"window": {
+				"width": 540,
+				"height": 380
+			},
+			"contents": [
+				{
+					"x": 410,
+					"y": 180,
+					"type": "link",
+					"path": "/Applications"
+				},
+				{
+					"x": 130,
+					"y": 180,
+					"type": "file"
+				}
+			],
+			"iconSize": 128
+		},
+		"win": {
+			"icon": "resources/icon.ico",
+			"target": [
+				"squirrel",
+				"nsis"
+			]
+		},
+		"nsis": {
+			"oneClick": false,
+			"language": "2052",
+			"perMachine": true,
+			"allowToChangeInstallationDirectory": true
+		},
+		"squirrelWindows": {
+			"iconUrl": "https://raw.githubusercontent.com/dengyaolong/geektime-electron/master/img/icon.ico"
+		}
+	},
+	"keywords": [],
+	"author": "陌路",
+	"license": "ISC",
+	"dependencies": {
+		"fs-extra": "^9.0.1",
+		"tinify": "^1.6.0-beta.2",
+		"electron-is-dev": "^1.2.0"
+	},
+	"devDependencies": {
+		"concurrently": "^5.2.0",
+		"cross-env": "^7.0.2",
+		"electron": "^8.3.4",
+		"electron-builder": "^22.7.0",
+		"electron-builder-squirrel-windows": "^22.7.0",
+		"wait-on": "^5.0.1"
+	}
+}
