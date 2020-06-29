@@ -18,7 +18,8 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Cell,  Switch, CellGroup, Input, Upload, Button, Tag} from 'view-design';
 import { State, Mutation } from 'vuex-class'
-
+declare var require: any;
+declare var __dirname: any;
 @Component({
     components: {
         ICell: Cell,
@@ -31,7 +32,7 @@ import { State, Mutation } from 'vuex-class'
     },
     computed: {
         cacheDirShowText() {
-            const path = window.require('path');
+            const path = require('path');
             // @ts-ignore
             return path.resolve(__dirname, this.cacheDir);
         }
@@ -45,7 +46,7 @@ export default class UserConfig extends Vue {
     @Mutation 'SET_REPLACE_STATUS': any;
     @Mutation 'SET_API_KEY': any;
     async openFileSelect() {
-        const { remote } = window.require('electron');
+        const { remote } = require('electron');
         const result = await remote.dialog.showOpenDialog({
             properties: ['openDirectory'],
         })

@@ -8,7 +8,8 @@
 		"start": "concurrently \"npm run start:render\" \"wait-on http://localhost:8080 && npm run start:main\"",
 		"start:render": "cd app/renderer/src/main && npm run serve",
 		"start:main": "electron .",
-		"build": "cd app/renderer/src/main && npm run build",
+        "build": "cd app/renderer/src/main && npm run build",
+        "pack:mac": "npm run build && cross-env NPM_CONFIG_ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder build --mac",
 		"pack:win": "npm run build && cross-env NPM_CONFIG_ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder build --win --ia32",
 		"postinstall": "electron-builder install-app-deps"
 	},
