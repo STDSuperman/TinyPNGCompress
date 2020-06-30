@@ -13,6 +13,7 @@ function create() {
             nodeIntegration: true
         }
     })
+    win.webContents.openDevTools();
 
     win.on('close', (e) => {
         if (willClose) {

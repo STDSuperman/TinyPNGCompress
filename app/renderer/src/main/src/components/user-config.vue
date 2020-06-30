@@ -1,7 +1,7 @@
 <template>
 <div class='user-config'>
     <CellGroup>
-        <ICell title="缓存目录">
+        <ICell title="原图与缓存目录">
             <Tag color="primary" slot="extra" @click.native="openFileSelect">{{cacheDirShowText}}</Tag>
         </ICell>
         <ICell title="API KEY">
@@ -18,8 +18,8 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Cell,  Switch, CellGroup, Input, Upload, Button, Tag} from 'view-design';
 import { State, Mutation } from 'vuex-class'
-declare var require: any;
 declare var __dirname: any;
+declare var window: any;
 @Component({
     components: {
         ICell: Cell,
@@ -32,7 +32,7 @@ declare var __dirname: any;
     },
     computed: {
         cacheDirShowText() {
-            const path = require('path');
+            const path = window.require('path');
             // @ts-ignore
             return path.resolve(__dirname, this.cacheDir);
         }
@@ -46,7 +46,7 @@ export default class UserConfig extends Vue {
     @Mutation 'SET_REPLACE_STATUS': any;
     @Mutation 'SET_API_KEY': any;
     async openFileSelect() {
-        const { remote } = require('electron');
+        const { remote } = window.require('electron');
         const result = await remote.dialog.showOpenDialog({
             properties: ['openDirectory'],
         })
