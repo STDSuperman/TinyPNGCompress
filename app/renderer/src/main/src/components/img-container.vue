@@ -19,6 +19,7 @@ import { Component, Vue } from 'vue-property-decorator';
 import { isSpecificImage, isFolder, dirExist } from '../utils/index.js';
 import { Card } from 'view-design'
 import { State } from 'vuex-class'
+const tinify = window.require('tinify')
 
 @Component({
 	components: { Card },
@@ -32,7 +33,6 @@ export default class ImgContainer extends Vue {
 	constructor(props: any) {
 		super(props);
 		this.fs = window.require('fs');
-		this.tinify = window.require('tinify')
 	}
 	$refs: {
 		file: HTMLFormElement;
@@ -40,20 +40,21 @@ export default class ImgContainer extends Vue {
 	};
 	// 上传压缩并替换原图片
 	compressImage(path: string, filename: string) {
-		this.tinify.key = this.apiKey;
+		tinify.key = this.apiKey;
 		const sourceData = this.fs.readFileSync(path);
 		console.log(sourceData)
-		this.tinify.fromBuffer(sourceData).toBuffer((err: Error, resultData: BufferSource) => {
+		tinify.fromBuffer(sourceData).toBuffer((err: any, resultData: BufferSource) => {
 			// if (err) throw err;
-			if (err instanceof this.tinify.ConnectionError ||
-				err instanceof this.tinify.ServerError) {
+			if (err instanceof tinify.ConnectionError ||
+				err instanceof tinify.ServerError) {
 				console.log('compress failed.'+path+', recompress.');
-				this.compressImage(path, filename);
+				// this.compressImage(path, filename);
 				return;
-			} else if (err instanceof this.tinify.ClientError ||
-				err instanceof this.tinify.AccountError) {
+			} else if (err instanceof tinify.ClientError ||
+				err instanceof tinify.AccountError) {
 				if (err.message.indexOf('Your monthly limit has been exceeded') >= 0) {
 					/*该账户数目超过*/
+					this.$Message.warning('该账户每日压缩次数以用完!')
 					return;
 				}
 				return;
