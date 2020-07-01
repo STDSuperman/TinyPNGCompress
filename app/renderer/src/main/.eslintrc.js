@@ -1,4 +1,5 @@
 module.exports = {
+<<<<<<< HEAD
   root: true,
   env: {
     node: true
@@ -18,3 +19,30 @@ module.exports = {
     "@typescript-eslint/ban-ts-ignore": "off"
   }
 };
+=======
+    "env": {
+        "browser": true,
+        "commonjs": true,
+        "es6": true
+    },
+    "extends": [
+        "eslint:recommended",
+        "plugin:vue/essential",
+        "plugin:@typescript-eslint/eslint-recommended"
+    ],
+    "globals": {
+        "Atomics": "readonly",
+        "SharedArrayBuffer": "readonly"
+    },
+    "parserOptions": {
+        "ecmaVersion": 2018,
+        "parser": "@typescript-eslint/parser"
+    },
+    "plugins": [
+        "vue",
+        "@typescript-eslint"
+    ],
+    "rules": {
+    }
+};
+>>>>>>> 77766fcd1535e2a01d83d7a8fdb0e496be6efea5

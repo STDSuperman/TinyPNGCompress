@@ -1,7 +1,7 @@
 <template>
 <div class='user-config'>
     <CellGroup>
-        <ICell title="缓存目录">
+        <ICell title="原图与缓存目录">
             <Tag color="primary" slot="extra" @click.native="openFileSelect">{{cacheDirShowText}}</Tag>
         </ICell>
         <ICell title="API KEY">
@@ -18,7 +18,8 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Cell,  Switch, CellGroup, Input, Upload, Button, Tag} from 'view-design';
 import { State, Mutation } from 'vuex-class'
-
+declare var __dirname: any;
+declare var window: any;
 @Component({
     components: {
         ICell: Cell,
