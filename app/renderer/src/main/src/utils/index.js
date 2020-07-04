@@ -1,4 +1,12 @@
 const fs = window.require('fs')
+const crypto = window.require('crypto');
+
+export const caculateFileHash = (buffer) => {
+    const fsHash = crypto.createHash('md5');
+    fsHash.update(buffer.toString());
+    const hash = fsHash.digest('hex');
+    return hash;
+}
 
 export const isSpecificImage = (path) => {
     const idx = path.lastIndexOf('.');
