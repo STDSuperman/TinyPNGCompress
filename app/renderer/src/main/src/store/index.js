@@ -5,7 +5,8 @@ import { generatorGetters } from '../utils/index';
 const state = {
     cacheDir: './TinyPNGCacheDir',
     replaceStatus: true,
-    apiKey: 'Tcdl0JRbM7tsfplqJBb9Z69Dvdk1dSHP'
+    apiKey: 'Tcdl0JRbM7tsfplqJBb9Z69Dvdk1dSHP',
+    fileList: []
 }
 export default {
     state,
