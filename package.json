@@ -8,8 +8,8 @@
 		"start": "concurrently \"npm run start:render\" \"wait-on http://localhost:8080 && npm run start:main\"",
 		"start:render": "cd app/renderer/src/main && npm run serve",
 		"start:main": "electron .",
-        "build": "cd app/renderer/src/main && npm run build",
-        "pack:mac": "npm run build && cross-env NPM_CONFIG_ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder build --mac",
+		"build": "cd app/renderer/src/main && npm run build",
+		"pack:mac": "npm run build && cross-env NPM_CONFIG_ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder build --mac",
 		"pack:win": "npm run build && cross-env NPM_CONFIG_ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder build --win --ia32",
 		"postinstall": "electron-builder install-app-deps"
 	},
@@ -75,9 +75,10 @@
 	"author": "陌路",
 	"license": "ISC",
 	"dependencies": {
+		"electron-is-dev": "^1.2.0",
+		"electron-store": "^5.2.0",
 		"fs-extra": "^9.0.1",
-		"tinify": "^1.6.0-beta.2",
-		"electron-is-dev": "^1.2.0"
+		"tinify": "^1.6.0-beta.2"
 	},
 	"devDependencies": {
 		"concurrently": "^5.2.0",

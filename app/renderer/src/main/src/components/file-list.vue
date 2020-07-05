@@ -54,7 +54,7 @@
                     <p>空空如也</p>
                 </div>
             <div slot="footer">
-                <Button type="warning" size="large" long @click="retryAllError">重新压缩失败项</Button>
+                <Button :disabled='!needRetryErrorItem' type="warning" size="large" long @click="retryAllError">重新压缩所有失败项</Button>
             </div>
         </Modal>
     </div>
@@ -63,7 +63,7 @@
 <script lang='ts'>
 import { Vue, Component } from "vue-property-decorator";
 import { Cell, Icon, CellGroup, Spin, Card, Button, Poptip } from "view-design";
-import { State } from "vuex-class";
+import { State, Mutation } from "vuex-class";
 
 @Component({
     components: {
@@ -72,6 +72,8 @@ import { State } from "vuex-class";
 })
 export default class FileList extends Vue {
     @State fileList: Array<object>;
+    @State failMap: Object;
+    @Mutation CHANGE_FILE_INFO: any;
     showModel: boolean = false;
     get btnText() {
         if (this.fileList.length) {
@@ -79,17 +81,23 @@ export default class FileList extends Vue {
             this.fileList.forEach((item: any) => {
                 allReduceSize += item.reduceSize;
             })
-            return `${this.fileList.length} 个压缩任务，节省 ${allReduceSize || 0} k`;
+            return `${this.fileList.length} 个压缩任务` + (allReduceSize ? `节省 ${allReduceSize} k` : '');
         }
         return '暂无压缩任务';
+    }
+    get needRetryErrorItem() {
+        return Object.keys(this.failMap).length;
     }
     checkIsShowLoading(item: any) {
         return !item.isCache && !item.status;
     }
     retryAllError() {
-        this.fileList.forEach((item: any) => {
+        const failList = Object.keys(this.failMap);
+        failList.forEach((key: any) => {
+            const item: any = this.fileList[key];
             if (item.status === 2) {
-                
+                this.CHANGE_FILE_INFO({status: 0, message: null, url: null, isCache: false, currentFilePos: key}); // 重新初始化需要压缩的项
+                this.$root.$emit('retryCompress', item.path, key)
             }
         })
     }

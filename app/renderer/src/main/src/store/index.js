@@ -3,11 +3,13 @@ import actions from './actions'
 import { generatorGetters } from '../utils/index';
 
 const state = {
-    cacheDir: './TinyPNGCacheDir',
+    cacheDir: '',
     replaceStatus: true,
-    apiKey: 'Tcdl0JRbM7tsfplqJBb9Z69Dvdk1dSHP',
+    apiKey: '',
     fileList: [],
-    cacheStatus: true
+    failMap: {},
+    cacheStatus: true,
+    userConfig: {}
 }
 export default {
     state,

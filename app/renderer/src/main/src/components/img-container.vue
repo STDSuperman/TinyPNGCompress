@@ -104,27 +104,32 @@ export default class ImgContainer extends Vue {
 		return { isCache: false };
 	}
 	// 上传压缩并替换原图片
-	compressImage(path: string) {
+	compressImage(path: string, retryIndex: number = -1) {
 		tinify.key = this.apiKey;
 		const sourceData = this.fs.readFileSync(path);
 		const pathModule = window.require('path');
 		const fileInfo = pathModule.parse(path);
 		const hash = caculateFileHash(sourceData);
-		const { isCache } = this.checkCache(hash);
-		let currentFilePos = -1;
-		// 添加当前压缩任务到任务列表中
-		this.ADD_FILE_INFO({
+		let isCache = false;
+		if (this.cacheStatus) {
+			isCache = this.checkCache(hash).isCache;
+		}
+		let currentFilePos = retryIndex; // 当前压缩任务在压缩列表中的索引
+		// 添加当前压缩任务到任务列表中,如果是重新压缩失败项则不初始化
+		retryIndex === -1 && this.ADD_FILE_INFO({
 			fileInfo: {
 				filename: fileInfo.base,
 				isCache: isCache,
-				url: isCache && sourceData.toString('base64'),
-				message: isCache && "命中缓存（请勿重复压缩）"
+				url: sourceData.toString('base64'),
+				message: isCache && "命中缓存（请勿重复压缩）",
+				path
 			},
 			// 获取当前压缩文件任务在fileList中的索引，用于修改异步状态
 			cb: (index: number) => {
 				currentFilePos = index;
 			}
 		});
+		// 如果用户关闭了缓存模式则直接退出,返回缓存
 		if (!isCache) {
 			let currentFileInfo: any = { currentFilePos};
 			tinify.fromBuffer(sourceData).toBuffer((err: any, resultData: BufferSource) => {
@@ -234,6 +239,10 @@ export default class ImgContainer extends Vue {
 		// })
 	}
 	mounted() {
+		// 重新压缩失败项
+		this.$root.$on('retryCompress', (path: string, retryIndex: number) => {
+			this.compressImage(path, retryIndex)
+		})
 		this.init();
 		this.initDropTarget();
 	}

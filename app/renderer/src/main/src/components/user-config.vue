@@ -43,6 +43,7 @@ export default class UserConfig extends Vue {
     @Mutation 'SET_REPLACE_STATUS': any;
     @Mutation 'SET_API_KEY': any;
     @Mutation 'SET_CACHE_STATUS': any;
+    @Mutation 'LOAD_USER_CONFIG': any;
     get cacheDirShowText() {
         const path = window.require('path');
         return path.resolve('./', this.cacheDir);
@@ -66,6 +67,9 @@ export default class UserConfig extends Vue {
     }
     setApiKey(e: any) {
         this.SET_API_KEY(e.target.value)
+    }
+    mounted() {
+        this.LOAD_USER_CONFIG();
     }
 }
 </script>
