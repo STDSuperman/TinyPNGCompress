@@ -7,13 +7,13 @@ let win;
 let willClose = false; // 用于实现用户点击窗口关闭按钮进行隐藏或右键图标进行真正的退出
 function create() {
     win = new BrowserWindow({
-        height: 600,
-        width: 500,
+        height: 660,
+        width: 520,
         webPreferences: {
             nodeIntegration: true
         }
     })
-    win.webContents.openDevTools();
+    // win.webContents.openDevTools();
 
     win.on('close', (e) => {
         if (willClose) {
