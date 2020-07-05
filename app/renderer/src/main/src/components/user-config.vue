@@ -2,13 +2,16 @@
 <div class='user-config'>
     <CellGroup>
         <ICell title="原图与缓存目录">
-            <Tag color="primary" slot="extra" @click.native="openFileSelect">{{cacheDirShowText}}</Tag>
+            <Tag style="max-width: 250px;text-overflow: ellipsis;" color="primary" slot="extra" @click.native="openFileSelect">{{cacheDirShowText}}</Tag>
         </ICell>
         <ICell title="API KEY">
             <Input :value="apiKey" @on-change="setApiKey" slot="extra" @on-search='registerApiKey' search enter-button="注册" type="text" placeholder="请输入您的api key" style="width: 300px" />
         </ICell>
         <ICell title="是否替换原图">
             <ISwitch @on-change="changeReplaceStatus" slot="extra" :value='replaceStatus'/>
+        </ICell>
+        <ICell title="是否开启压缩与原图缓存">
+            <ISwitch @on-change="changeNeedCacheStatus" slot="extra" :value='cacheStatus'/>
         </ICell>
     </CellGroup>
 </div>
@@ -18,7 +21,7 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Cell,  Switch, CellGroup, Input, Upload, Button, Tag} from 'view-design';
 import { State, Mutation } from 'vuex-class'
-declare var __dirname: any;
+
 declare var window: any;
 @Component({
     components: {
@@ -30,21 +33,23 @@ declare var window: any;
         Button,
         Tag
     },
-    computed: {
-        cacheDirShowText() {
-            const path = window.require('path');
-            // @ts-ignore
-            return path.resolve(__dirname, this.cacheDir);
-        }
-    }
 })
 export default class UserConfig extends Vue {
     @State cacheDir: any;
     @State replaceStatus: any;
+    @State cacheStatus: any;
     @State apiKey: any;
     @Mutation 'SET_CACHE_FOLDER': any;
     @Mutation 'SET_REPLACE_STATUS': any;
     @Mutation 'SET_API_KEY': any;
+    @Mutation 'SET_CACHE_STATUS': any;
+    get cacheDirShowText() {
+        const path = window.require('path');
+        return path.resolve('./', this.cacheDir);
+    }
+    changeNeedCacheStatus(val: boolean) {
+        this.SET_CACHE_STATUS(val)
+    }
     async openFileSelect() {
         const { remote } = window.require('electron');
         const result = await remote.dialog.showOpenDialog({

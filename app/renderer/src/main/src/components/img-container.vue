@@ -23,7 +23,13 @@ const tinify = window.require('tinify');
 declare var window: any;
 
 @Component({
-	components: { Card }
+	components: { Card },
+	watch: {
+		cacheDir(val) {
+			// @ts-ignore
+			val && this.init();
+		}
+	}
 })
 export default class ImgContainer extends Vue {
 	fs: any;
@@ -32,6 +38,7 @@ export default class ImgContainer extends Vue {
 	@State apiKey: string;
 	@State cacheDir: string;
 	@State replaceStatus: any;
+	@State cacheStatus: any;
 	@Mutation ADD_FILE_INFO: any;
 	@Mutation CHANGE_FILE_INFO: any;
 	cacheCompressedDir: string; // 压缩图目录
@@ -57,23 +64,29 @@ export default class ImgContainer extends Vue {
 		!dirExist(this.cacheOriginaldDir) && this.fs.mkdirSync(this.cacheOriginaldDir);
 	}
 	// 拿到压缩结果进行一系列处理
-	handleCompressed(hash: string, resultData: any, sourceData: any, path: string, fileInfo: any, fileIndex: number) {
+	handleCompressed(hash: string, resultData: any, sourceData: any, path: string, fileInfo: any, currentFileInfo: any) {
 		const pathModule = window.require('path');
-		const { name, ext, base } = fileInfo;
-		const originalPicPath = pathModule.resolve(this.cacheOriginaldDir, name + '-tiny-' + hash + ext); // 原图缓存路径
-		const currentHash = caculateFileHash(resultData);
-		const compressedPicPath = pathModule.resolve(this.cacheCompressedDir, currentHash + ext); // 压缩图缓存路径
-		this.fs.writeFileSync(compressedPicPath, resultData); // 缓存压缩图
-		this.fs.writeFileSync(originalPicPath, sourceData); // 缓存原图
+		const { name, ext } = fileInfo;
+		if (this.cacheStatus) {
+			const originalPicPath = pathModule.resolve(this.cacheOriginaldDir, name + '-tiny-' + hash + ext); // 原图缓存路径
+			const currentHash = caculateFileHash(resultData);
+			const compressedPicPath = pathModule.resolve(this.cacheCompressedDir, currentHash + ext); // 压缩图缓存路径
+			this.fs.writeFileSync(compressedPicPath, resultData); // 缓存压缩图
+			this.fs.writeFileSync(originalPicPath, sourceData); // 缓存原图
+		}
 		if (this.replaceStatus) {
 			this.fs.writeFileSync(path, resultData); // 替换目标图
 		} else {
 			this.fs.writeFileSync(path.replace(/\./g, '') + '-tiny-' + ext, resultData); // 在目标图位置放置图片
 		}
-		// const proportion = Math.ceil(((sourceData.length - resultData.length) / sourceData.length) * 100);
+		const proportion = Math.ceil(((sourceData.length - resultData.length) / sourceData.length) * 100);
 		const reduceSize = sourceData.length - resultData.length;
-		this.CHANGE_FILE_INFO({ fileIndex, complete: true, reduceSize});
-		this.$Message.success(`压缩${ base }成功，减少尺寸${ reduceSize }`);
+		currentFileInfo.status = 1;
+		currentFileInfo.reduceSize = reduceSize;
+		currentFileInfo.message = `- ${reduceSize / 1000} k（${-proportion}%）`;
+		currentFileInfo.url = resultData.toString('base64');
+		this.CHANGE_FILE_INFO(currentFileInfo);
+		// this.$Message.success(`压缩${ base }成功，减少尺寸${ reduceSize }`);
 	}
 	checkCache(hash: string) {
 		const fileList = this.fs.readdirSync(this.cacheCompressedDir);
@@ -104,7 +117,8 @@ export default class ImgContainer extends Vue {
 			fileInfo: {
 				filename: fileInfo.base,
 				isCache: isCache,
-				complete: false
+				url: isCache && sourceData.toString('base64'),
+				message: isCache && "命中缓存（请勿重复压缩）"
 			},
 			// 获取当前压缩文件任务在fileList中的索引，用于修改异步状态
 			cb: (index: number) => {
@@ -112,28 +126,28 @@ export default class ImgContainer extends Vue {
 			}
 		});
 		if (!isCache) {
+			let currentFileInfo: any = { currentFilePos};
 			tinify.fromBuffer(sourceData).toBuffer((err: any, resultData: BufferSource) => {
-				console.log(err.message);
-				if (err.message.indexOf('Image could not be decoded') !== -1) {
-					this.$Message.error('该图片无法被解析');
-					return;
+				if (err && err.message && err.message.indexOf('Image could not be decoded') !== -1) {
+					// this.$Message.error('该图片无法被解析');
+					currentFileInfo.message = '格式无法解析';
 				}
 				if (err instanceof tinify.ConnectionError || err instanceof tinify.ServerError) {
-					console.log('compress failed.' + path + ', recompress.');
-					this.compressImage(path);
-					return;
+					currentFileInfo.message = '压缩失败'
 				} else if (err instanceof tinify.ClientError || err instanceof tinify.AccountError) {
 					if (err.message.indexOf('Your monthly limit has been exceeded') >= 0) {
 						/*该账户数目超过*/
-						this.$Message.error('今日图片压缩次数已用尽！');
-						return;
+						// this.$Message.error('今日图片压缩次数已用尽！');
+						currentFileInfo.message = '今日压缩次数达到上限'
 					}
-					return;
 				}
-				this.handleCompressed(hash, resultData, sourceData, path, fileInfo, currentFilePos);
+				if (err) {
+					currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
+					this.CHANGE_FILE_INFO(currentFileInfo);
+				} else {
+					this.handleCompressed(hash, resultData, sourceData, path, fileInfo, currentFileInfo);
+				}
 			});
-		} else {
-			this.$Message.success(`压缩${ fileInfo.base }成功（来自缓存）`);
 		}
 	}
 	selectFile() {
@@ -151,6 +165,8 @@ export default class ImgContainer extends Vue {
 		for (let i = 0; i < files.length; i++) {
 			this.compressImage(files[i].path);
 		}
+		this.$refs.file.value = '';
+		this.$Message.success('压缩任务已添加');
 	}
 	handleFolder(path: string) {
 		const pathModule = window.require('path');
@@ -193,6 +209,7 @@ export default class ImgContainer extends Vue {
 						}
 					}
 				}
+				this.$Message.success('压缩任务已添加');
 				e.preventDefault();
 				e.stopPropagation();
 			},
@@ -211,10 +228,10 @@ export default class ImgContainer extends Vue {
 
 		container.addEventListener('dragover', dragEnterHandler);
 		container.addEventListener('dragleave', dragLeaveHandler);
-		this.$on('hook:destroyed',() => {
-			container.removeventListener('dragover', dragEnterHandler);
-			container.removeventListener('dragleave', dragLeaveHandler);
-		})
+		// this.$on('hook:destroyed',() => {
+		// 	container.removeventListener('dragover', dragEnterHandler);
+		// 	container.removeventListener('dragleave', dragLeaveHandler);
+		// })
 	}
 	mounted() {
 		this.init();

@@ -6,7 +6,8 @@ const state = {
     cacheDir: './TinyPNGCacheDir',
     replaceStatus: true,
     apiKey: 'Tcdl0JRbM7tsfplqJBb9Z69Dvdk1dSHP',
-    fileList: []
+    fileList: [],
+    cacheStatus: true
 }
 export default {
     state,
