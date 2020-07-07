@@ -5,7 +5,7 @@
 */assets
 */dist/
 */build/
-app/renderer/pages/main/
+**/app/renderer/pages/main/
 **/release
 TinyPNGCacheDir
 

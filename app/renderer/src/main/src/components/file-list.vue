@@ -64,6 +64,7 @@
 import { Vue, Component } from "vue-property-decorator";
 import { Cell, Icon, CellGroup, Spin, Card, Button, Poptip } from "view-design";
 import { State, Mutation } from "vuex-class";
+declare var require: any;
 
 @Component({
     components: {
@@ -79,6 +80,7 @@ export default class FileList extends Vue {
         if (this.fileList.length) {
             let allReduceSize = 0;
             this.fileList.forEach((item: any) => {
+                if (!item.reduceSize) return;
                 allReduceSize += item.reduceSize;
             })
             return `${this.fileList.length} 个压缩任务` + (allReduceSize ? `节省 ${allReduceSize} k` : '');
