@@ -1,5 +1,6 @@
 // 主窗口
 const { BrowserWindow, ipcMain } = require('electron');
+const { initIpcMessage } = require('./message');
 const path = require('path')
 const isDev = require("electron-is-dev")
 
@@ -13,7 +14,10 @@ function create() {
             nodeIntegration: true
         }
     })
+    // 打开devtools
     win.webContents.openDevTools();
+    // 处理渲染进程与主线程通信
+    initIpcMessage();
 
     win.on('close', (e) => {
         if (willClose) {

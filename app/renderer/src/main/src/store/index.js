@@ -9,7 +9,8 @@ const state = {
     fileList: [],
     failMap: {},
     cacheStatus: true,
-    userConfig: {}
+    userConfig: {},
+    userDataPath: ''
 }
 export default {
     state,
