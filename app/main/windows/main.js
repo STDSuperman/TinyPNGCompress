@@ -1,5 +1,5 @@
 // 主窗口
-const { BrowserWindow, ipcMain } = require('electron');
+const { BrowserWindow, ipcMain, Menu } = require('electron');
 const { initIpcMessage } = require('./message');
 const path = require('path')
 const isDev = require("electron-is-dev")
@@ -15,7 +15,7 @@ function create() {
         }
     })
     // 打开devtools
-    win.webContents.openDevTools();
+    // win.webContents.openDevTools();
     // 处理渲染进程与主线程通信
     initIpcMessage();
 
@@ -44,6 +44,23 @@ function show() {
     win.show();
 }
 
+function registerShortcut() {
+	if (process.platform === 'darwin') {
+		Menu.setApplicationMenu(Menu.buildFromTemplate([]));
+		let contents = win.webContents;
+        const localShortcut = require('electron-localshortcut');
+		localShortcut.register(win, 'CommandOrControl+A', () => {
+			contents.selectAll();
+		});
+		localShortcut.register(win, 'CommandOrControl+C', () => {
+			contents.copy();
+		});
+		localShortcut.register(win, 'CommandOrControl+V', () => {
+			contents.paste();
+        });
+	}
+}
+
 function initDragEvent() {
     ipcMain.on('ondragstart', (e, filepath) => {
         e.sender.startDrag({file: filepath,icon: './图片.png'})
@@ -54,5 +71,6 @@ module.exports = {
     create,
     show,
     close,
-    initDragEvent
+    initDragEvent,
+    registerShortcut
 }
