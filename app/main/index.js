@@ -11,7 +11,8 @@ if (!getLock) {
 
 	app.on('ready', () => {
         createMainWindow();
-        registerShortcut();
+		// registerShortcut();
+		require('./trayAndMenu/index');
 	});
 
 	app.on('activate', () => {

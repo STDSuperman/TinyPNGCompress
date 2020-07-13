@@ -48,11 +48,11 @@
                             </Spin>
                         </Cell>
                     </CellGroup> -->
-                </div>
-                <div class="empty" v-else>
-                    <Icon type="logo-octocat" />
-                    <p>空空如也</p>
-                </div>
+            </div>
+            <div class="empty" v-else>
+                <Icon type="logo-octocat" class="icon"/>
+                <p>空空如也</p>
+            </div>
             <div slot="footer">
                 <Button :disabled='!needRetryErrorItem' type="warning" size="large" long @click="retryAllError">重新压缩所有失败项</Button>
             </div>
@@ -237,10 +237,14 @@ export default class FileList extends Vue {
     align-items: center;
     text-align: center;
     flex-direction: column;
+    height: 100px;
+    color: #aaa;
+    .icon{
+        font-size: 24px;
+    }
     p{
-        font-size: 12px;
-        color: #aaa;
         text-anchor: center;
+        font-size: 17px;
     }
 }
 </style>
