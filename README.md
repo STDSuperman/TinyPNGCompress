@@ -1,6 +1,6 @@
 ## TinyPNGCompress
 
-![](https://super-1257398419.cos.ap-chengdu.myqcloud.com/preview.png)
+![preview](https://s1.ax1x.com/2020/07/18/UcxnpR.png)
 
 一个采用`TinyPNG`压缩的客户端App，支持平台：`Mac`、`Win`、`Linux`。`TinyPNG`能够提供“几乎无损”的压缩品质，也是目前大部分图片压缩推崇的选择。
 
