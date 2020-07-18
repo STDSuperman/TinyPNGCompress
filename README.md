@@ -21,3 +21,6 @@
 1. 到[`TinyPNG`](https://tinypng.com/developers)注册`API Key`，或者打开`TinyPNGCompress`进行注册。
 2. 复制`API Key`并粘贴到App相应位置。
 3. 拖拽图片或文件夹到窗口指定位置。
+
+### 协议
+Developed by [@STDSuperman](https://github.com/STDSuperman) and available under the [MIT](http://opensource.org/licenses/MIT) license.
