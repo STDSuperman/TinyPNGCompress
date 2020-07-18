@@ -1,5 +1,7 @@
 ## TinyPNGCompress
 
+![](https://super-1257398419.cos.ap-chengdu.myqcloud.com/preview.png)
+
 一个采用`TinyPNG`压缩的客户端App，支持平台：`Mac`、`Win`、`Linux`。`TinyPNG`能够提供“几乎无损”的压缩品质，也是目前大部分图片压缩推崇的选择。
 
 本项目由`Electron`、`Vue`、`TypeScript`、`Node`作为主要开发框架和语言。
