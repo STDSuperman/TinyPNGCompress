@@ -2,10 +2,13 @@
 <div class='user-config'>
     <CellGroup>
         <ICell title="原图与缓存目录">
-            <Tag style="max-width: 250px;text-overflow: ellipsis;" color="primary" slot="extra" @click.native="openFileSelect">{{cacheDirShowText}}</Tag>
+            <div slot="extra" class="cache-dir">
+                <Tag class="tag" color="primary"  @click.native="openFileDir">{{cacheDirShowText}}</Tag>
+                <Button size='small' type='info' class="view-btn" @click="openFileSelect">更改目录</Button>
+            </div>
         </ICell>
         <ICell title="API KEY">
-            <Input :value="apiKey" @on-change="setApiKey" slot="extra" @on-search='registerApiKey' search enter-button="注册" type="text" placeholder="请输入您的api key" style="width: 300px" />
+            <Input :value="apiKey" @on-change="setApiKey" slot="extra" @on-search='registerApiKey' search enter-button="去注册" type="text" placeholder="请输入您的api key" style="width: 300px" />
         </ICell>
         <ICell title="是否替换原图">
             <ISwitch @on-change="changeReplaceStatus" slot="extra" :value='replaceStatus'/>
@@ -21,7 +24,8 @@
 import { Component, Vue } from 'vue-property-decorator';
 import { Cell,  Switch, CellGroup, Input, Upload, Button, Tag} from 'view-design';
 import { State, Mutation } from 'vuex-class'
-
+const { shell, remote } = window.require('electron')
+const path = window.require('path');
 declare var window: any;
 @Component({
     components: {
@@ -45,14 +49,15 @@ export default class UserConfig extends Vue {
     @Mutation 'SET_CACHE_STATUS': any;
     @Mutation 'LOAD_USER_CONFIG': any;
     get cacheDirShowText() {
-        const path = window.require('path');
         return path.resolve('./', this.cacheDir);
     }
     changeNeedCacheStatus(val: boolean) {
         this.SET_CACHE_STATUS(val)
     }
+    openFileDir() {
+        shell.openItem(this.cacheDir);
+    }
     async openFileSelect() {
-        const { remote } = window.require('electron');
         const result = await remote.dialog.showOpenDialog({
             properties: ['openDirectory'],
         })
@@ -83,6 +88,15 @@ export default class UserConfig extends Vue {
     }
     .ivu-tag-primary{
         margin-right: -1px
+    }
+    .cache-dir{
+        .tag{
+            max-width: 250px;
+            text-overflow: ellipsis;
+        }
+        .view-btn {
+            margin-left: 5px;
+        }
     }
 }
 </style>

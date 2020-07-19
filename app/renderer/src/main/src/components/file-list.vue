@@ -20,7 +20,7 @@
                                 </div>
                             </div>
                             <div class="right">
-                                <Spin fix>
+                                <Spin fix class="status-container">
                                     <Icon
                                         v-if="checkIsShowLoading(item)"
                                         type="ios-loading"
@@ -28,26 +28,18 @@
                                         class="demo-spin-icon-load"
                                     ></Icon>
                                     <section v-else>
-                                        <Icon v-if="item.isCache || item.status === 1" type="ios-checkmark" size="30"></Icon>
+                                        <div class="success-container" v-if="item.isCache || item.status === 1">
+                                            <Icon type="ios-checkmark" size="30"></Icon>
+                                            <Tooltip content="还原原图" placement="top">
+                                                <Icon @click="restoreOrigin(item)" type="ios-undo" size="22" class="return" color='#ff9900'/>
+                                            </Tooltip>
+                                        </div>
                                         <Icon v-else type="ios-close" color='#ed4014' size="30"></Icon>
                                     </section>
                                 </Spin>
                             </div>
                     </div>
                 </Card>
-                    <!-- <CellGroup>
-                        <Cell v-for="(item, index) in fileList" :title="item.filename" :key="index">
-                            <Spin fix slot="extra">
-                                <Icon
-                                    v-if="checkIsShowLoading(item)"
-                                    type="ios-loading"
-                                    size="18"
-                                    class="demo-spin-icon-load"
-                                ></Icon>
-                                <Icon v-else type="ios-checkmark" size="30"></Icon>
-                            </Spin>
-                        </Cell>
-                    </CellGroup> -->
             </div>
             <div class="empty" v-else>
                 <Icon type="logo-octocat" class="icon"/>
@@ -64,8 +56,9 @@
 import { Vue, Component } from "vue-property-decorator";
 import { Cell, Icon, CellGroup, Spin, Card, Button, Poptip } from "view-design";
 import { State, Mutation } from "vuex-class";
+import { isFileExisted } from '../utils/index.js';
+const fs = window.require('fs')
 declare var require: any;
-
 @Component({
     components: {
         Cell, Icon, CellGroup, Spin, Card, Button, Poptip
@@ -74,6 +67,7 @@ declare var require: any;
 export default class FileList extends Vue {
     @State fileList: Array<object>;
     @State failMap: Object;
+    @State cacheDir: string
     @Mutation CHANGE_FILE_INFO: any;
     showModel: boolean = false;
     get btnText() {
@@ -83,12 +77,22 @@ export default class FileList extends Vue {
                 if (!item.reduceSize) return;
                 allReduceSize += item.reduceSize;
             })
-            return `${this.fileList.length} 个压缩任务` + (allReduceSize ? `节省 ${allReduceSize} k` : '');
+            return `${this.fileList.length} 个压缩任务` + (allReduceSize ? `节省 ${allReduceSize / 1000} k` : '');
         }
         return '暂无压缩任务';
     }
     get needRetryErrorItem() {
         return Object.keys(this.failMap).length;
+    }
+    // 还原原图
+    async restoreOrigin(item: any) {
+        const cacheOriginaldDir = item.originalPicPath;
+        if (isFileExisted(cacheOriginaldDir)) {
+            fs.writeFileSync(item.path, fs.readFileSync(cacheOriginaldDir));
+            this.$Message.success("还原原图成功");
+        } else {
+            this.$Message.error('原图文件不存在');
+        }
     }
     checkIsShowLoading(item: any) {
         return !item.isCache && !item.status;
@@ -107,8 +111,8 @@ export default class FileList extends Vue {
         this.showModel = true;
     }
     getUrl(item: any) {
-        if (item.url) {
-            return item.url && 'data:image/png;base64,' + item.url;
+        if (item.sourceDataBuffer) {
+            return item.sourceDataBuffer && 'data:image/png;base64,' + item.sourceDataBuffer;
         } else {
             return require("../assets/logo.png")
         }
@@ -128,6 +132,7 @@ export default class FileList extends Vue {
     max-height: 271px;
     overflow: auto;
     text-align: left;
+    padding-top: 8px;;
     .task-item{
         display: flex;
         justify-content: space-between;
@@ -181,9 +186,26 @@ export default class FileList extends Vue {
         }
         .right {
             width: 18%;
-            // border: solid 1px #fff;
-            // height: 100%;
             position: relative;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            .status-container {
+                .success-container {
+                    display: flex;
+                    justify-content: space-around;
+                    align-items: center;
+                    .return {
+                        margin-left: 10px;
+                        margin-top: 5px;
+                        cursor: pointer;
+                        &:hover {
+                            transform: scale(1.1);
+                            transform-origin: center;
+                        }
+                    }
+                }
+            }
         }
     }
     &::-webkit-scrollbar {

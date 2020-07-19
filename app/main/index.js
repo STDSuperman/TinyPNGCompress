@@ -12,7 +12,7 @@ if (!getLock) {
 	app.on('ready', () => {
         createMainWindow();
 		// registerShortcut();
-		require('./trayAndMenu/index');
+		// require('./trayAndMenu/index');
 	});
 
 	app.on('activate', () => {

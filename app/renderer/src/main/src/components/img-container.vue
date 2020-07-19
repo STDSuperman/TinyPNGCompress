@@ -20,6 +20,8 @@ import { isSpecificImage, isFolder, dirExist, caculateFileHash } from '../utils/
 import { Card } from 'view-design';
 import { State, Mutation } from 'vuex-class';
 const tinify = window.require('tinify');
+const pathModule = window.require('path');
+const fs = window.require('fs');
 declare var window: any;
 
 @Component({
@@ -52,45 +54,52 @@ export default class ImgContainer extends Vue {
 	};
 	init() {
 		if (!this.cacheDir) return;
-		const path = window.require('path');
-		this.fs = window.require('fs');
 		// 判断缓存目录是否存在
 		if (!dirExist(this.cacheDir)) {
-			this.fs.mkdirSync(this.cacheDir);
+			fs.mkdirSync(this.cacheDir);
 		}
-		this.cacheCompressedDir = path.resolve(this.cacheDir, 'compressed-picture'); // 创建压缩完的文件缓存目录
-		this.cacheOriginaldDir = path.resolve(this.cacheDir, 'original-picture'); // 创建压缩文件原图的文件目录
-		!dirExist(this.cacheCompressedDir) && this.fs.mkdirSync(this.cacheCompressedDir);
-		!dirExist(this.cacheOriginaldDir) && this.fs.mkdirSync(this.cacheOriginaldDir);
+		this.cacheCompressedDir = pathModule.resolve(this.cacheDir, 'compressed-picture'); // 创建压缩完的文件缓存目录
+		this.cacheOriginaldDir = pathModule.resolve(this.cacheDir, 'original-picture'); // 创建压缩文件原图的文件目录
+		!dirExist(this.cacheCompressedDir) && fs.mkdirSync(this.cacheCompressedDir);
+		!dirExist(this.cacheOriginaldDir) && fs.mkdirSync(this.cacheOriginaldDir);
 	}
 	// 拿到压缩结果进行一系列处理
 	handleCompressed(hash: string, resultData: any, sourceData: any, path: string, fileInfo: any, currentFileInfo: any) {
-		const pathModule = window.require('path');
 		const { name, ext } = fileInfo;
 		if (this.cacheStatus) {
-			const originalPicPath = pathModule.resolve(this.cacheOriginaldDir, name + '-tiny-' + hash + ext); // 原图缓存路径
 			const currentHash = caculateFileHash(resultData);
-			const compressedPicPath = pathModule.resolve(this.cacheCompressedDir, currentHash + ext); // 压缩图缓存路径
-			this.fs.writeFileSync(compressedPicPath, resultData); // 缓存压缩图
-			this.fs.writeFileSync(originalPicPath, sourceData); // 缓存原图
+			let compressedPicPath, originalPicPath;
+			const setCacheDirPath = () => {
+				compressedPicPath = pathModule.resolve(this.cacheCompressedDir, currentHash + ext); // 压缩图缓存路径
+				originalPicPath = pathModule.resolve(this.cacheOriginaldDir, name + '-tiny-' + hash + ext); // 原图缓存路径
+			}
+			setCacheDirPath();
+			if (!dirExist(originalPicPath) || !dirExist(compressedPicPath)) {
+				this.init();
+				setCacheDirPath();
+			}
+			currentFileInfo.originalPicPath = originalPicPath;
+			fs.writeFileSync(originalPicPath, sourceData); // 缓存原图
+			fs.writeFileSync(compressedPicPath, resultData); // 缓存压缩图
+		} else {
+			currentFileInfo.originalPicPath = null; // 未开启缓存则置为空
 		}
 		if (this.replaceStatus) {
-			this.fs.writeFileSync(path, resultData); // 替换目标图
+			fs.writeFileSync(path, resultData); // 替换目标图
 		} else {
-			this.fs.writeFileSync(path.replace(/\./g, '') + '-tiny-' + ext, resultData); // 在目标图位置放置图片
+			fs.writeFileSync(path.replace(/\./g, '') + '-tiny-' + ext, resultData); // 在目标图位置放置图片
 		}
 		const proportion = Math.ceil(((sourceData.length - resultData.length) / sourceData.length) * 100);
 		const reduceSize = sourceData.length - resultData.length;
 		currentFileInfo.status = 1;
 		currentFileInfo.reduceSize = reduceSize;
 		currentFileInfo.message = `- ${reduceSize / 1000} k（${-proportion}%）`;
-		currentFileInfo.url = resultData.toString('base64');
+		currentFileInfo.sourceDataBuffer = resultData.toString('base64');
 		this.CHANGE_FILE_INFO(currentFileInfo);
 		// this.$Message.success(`压缩${ base }成功，减少尺寸${ reduceSize }`);
 	}
 	checkCache(hash: string) {
-		const fileList = this.fs.readdirSync(this.cacheCompressedDir);
-		const pathModule = window.require("path");
+		const fileList = fs.readdirSync(this.cacheCompressedDir);
 		const filename = fileList.find((filename: string) => {
 			const { name } = pathModule.parse(filename);
 			if (name === hash) {
@@ -106,23 +115,26 @@ export default class ImgContainer extends Vue {
 	// 上传压缩并替换原图片
 	compressImage(path: string, retryIndex: number = -1) {
 		tinify.key = this.apiKey;
-		const sourceData = this.fs.readFileSync(path);
-		const pathModule = window.require('path');
+		const sourceData = fs.readFileSync(path);
 		const fileInfo = pathModule.parse(path);
 		const hash = caculateFileHash(sourceData);
+		const { name, ext } = fileInfo;
+		const originalPicPath = pathModule.resolve(this.cacheOriginaldDir, name + '-tiny-' + hash + ext); // 原图缓存路径
 		let isCache = false;
 		if (this.cacheStatus) {
 			isCache = this.checkCache(hash).isCache;
 		}
+		console.log(originalPicPath);
 		let currentFilePos = retryIndex; // 当前压缩任务在压缩列表中的索引
 		// 添加当前压缩任务到任务列表中,如果是重新压缩失败项则不初始化
 		retryIndex === -1 && this.ADD_FILE_INFO({
 			fileInfo: {
 				filename: fileInfo.base,
 				isCache: isCache,
-				url: sourceData.toString('base64'),
+				sourceDataBuffer: sourceData.toString('base64'),
 				message: isCache && "命中缓存（请勿重复压缩）",
-				path
+				path,
+				originalPicPath
 			},
 			// 获取当前压缩文件任务在fileList中的索引，用于修改异步状态
 			cb: (index: number) => {
@@ -174,9 +186,8 @@ export default class ImgContainer extends Vue {
 		this.$Message.success('压缩任务已添加');
 	}
 	handleFolder(path: string) {
-		const pathModule = window.require('path');
 		try {
-			const fileList = this.fs.readdirSync(path);
+			const fileList = fs.readdirSync(path);
 			fileList.forEach((filename: string) => {
 				if (isFolder(filename)) {
 					this.handleFolder(pathModule.resolve(path, filename)); // 递归遍历检查所有文件
@@ -257,7 +268,7 @@ export default class ImgContainer extends Vue {
 .img-container {
 	display: flex;
 	justify-content: center;
-	margin-top: 10px;
+	// margin-top: 10px;
 	.drop-area {
 		position: relative;
 		width: 100%;

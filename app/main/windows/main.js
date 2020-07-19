@@ -8,11 +8,15 @@ let win;
 let willClose = false; // 用于实现用户点击窗口关闭按钮进行隐藏或右键图标进行真正的退出
 function create() {
     win = new BrowserWindow({
-        height: 660,
-        width: 520,
+        height: 685,
+        width: 557,
         webPreferences: {
             nodeIntegration: true
-        }
+        },
+        icon: '../../../resources/icon.ico',
+        // fullscreenable: false,
+        // maxWidth: 520,
+        // maxHeight: 660
     })
     // 打开devtools
     // win.webContents.openDevTools();

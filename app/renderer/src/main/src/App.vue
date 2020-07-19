@@ -32,13 +32,18 @@ export default class App extends Vue {}
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-align: center;
-    margin: 0;
-    margin-top: 60px;
-    width: 100%;
-    height: 600px;
-    margin: 0 auto;
+    position: relative;
+    width: 530px;
+    height: 620px;
+    margin: 2px auto;
     overflow: hidden;
-    padding: 0;
+    box-shadow: 0 1px 6px rgba(0,0,0,.2);
+    border-color: #eee;
+    border-radius: 5px;;
+    padding: 20px 15px;
+    box-sizing: border-box;;
+    transform: scale(0.95);
+    transform-origin: center center;
     &::-webkit-scrollbar {
         /*滚动条整体样式*/
         width: 10px; /*高宽分别对应横竖滚动条的尺寸*/
