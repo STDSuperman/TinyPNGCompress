@@ -64,14 +64,14 @@ export default class ImgContainer extends Vue {
 		!dirExist(this.cacheOriginaldDir) && fs.mkdirSync(this.cacheOriginaldDir);
 	}
 	// 拿到压缩结果进行一系列处理
-	handleCompressed(hash: string, resultData: any, sourceData: any, path: string, fileInfo: any, currentFileInfo: any) {
+	handleCompressed(resultData: any, sourceData: any, path: string, fileInfo: any, currentFileInfo: any) {
 		const { name, ext } = fileInfo;
 		if (this.cacheStatus) {
 			const currentHash = caculateFileHash(resultData);
 			let compressedPicPath, originalPicPath;
 			const setCacheDirPath = () => {
 				compressedPicPath = pathModule.resolve(this.cacheCompressedDir, currentHash + ext); // 压缩图缓存路径
-				originalPicPath = pathModule.resolve(this.cacheOriginaldDir, name + '-tiny-' + hash + ext); // 原图缓存路径
+				originalPicPath = pathModule.resolve(this.cacheOriginaldDir, name + '-tiny-' + currentHash + ext); // 原图缓存路径
 			}
 			setCacheDirPath();
 			if (!dirExist(originalPicPath) || !dirExist(compressedPicPath)) {
@@ -95,6 +95,7 @@ export default class ImgContainer extends Vue {
 		currentFileInfo.reduceSize = reduceSize;
 		currentFileInfo.message = `- ${reduceSize / 1000} k（${-proportion}%）`;
 		currentFileInfo.sourceDataBuffer = resultData.toString('base64');
+		currentFileInfo.isRestore = false;
 		this.CHANGE_FILE_INFO(currentFileInfo);
 		// this.$Message.success(`压缩${ base }成功，减少尺寸${ reduceSize }`);
 	}
@@ -144,28 +145,56 @@ export default class ImgContainer extends Vue {
 		// 如果用户关闭了缓存模式则直接退出,返回缓存
 		if (!isCache) {
 			let currentFileInfo: any = { currentFilePos};
-			tinify.fromBuffer(sourceData).toBuffer((err: any, resultData: BufferSource) => {
-				if (err && err.message && err.message.indexOf('Image could not be decoded') !== -1) {
-					// this.$Message.error('该图片无法被解析');
-					currentFileInfo.message = '格式无法解析';
-				}
-				if (err instanceof tinify.ConnectionError || err instanceof tinify.ServerError) {
-					currentFileInfo.message = '压缩失败'
-				} else if (err instanceof tinify.ClientError || err instanceof tinify.AccountError) {
-					if (err.message.indexOf('Your monthly limit has been exceeded') >= 0) {
-						/*该账户数目超过*/
-						// this.$Message.error('今日图片压缩次数已用尽！');
-						currentFileInfo.message = '今日压缩次数达到上限'
-					}
-				}
-				if (err) {
-					currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
-					this.CHANGE_FILE_INFO(currentFileInfo);
-				} else {
-					this.handleCompressed(hash, resultData, sourceData, path, fileInfo, currentFileInfo);
-				}
-			});
+			const getCompressedImg = () => {
+				return new Promise((resolve) => {
+					tinify.fromBuffer(sourceData).toBuffer((err: any, resultData: BufferSource) => {
+						if (err) {
+							this.handleError(err, currentFileInfo);
+							currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
+							this.CHANGE_FILE_INFO(currentFileInfo);
+						} else {
+							this.handleCompressed(resultData, sourceData, path, fileInfo, currentFileInfo);
+						}
+						resolve();
+					});
+				})
+			}
+			this.setTimeoutError(getCompressedImg, () => {
+				this.handleError({message: "压缩超时"}, currentFileInfo);
+				currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
+				this.CHANGE_FILE_INFO(currentFileInfo);
+			})
 		}
+	}
+	// 超时函数
+	setTimeoutError(func: Function, cb: Function) {
+		const timeoutFunc = () => {
+			return new Promise((resolve ,reject) => {
+				setTimeout(() => {
+					reject();
+				}, 60 * 1000)
+			})
+		};
+		Promise.race([timeoutFunc(), func()]).catch(() => cb());
+	}
+	handleError(err: any, currentFileInfo: any) {
+		if (err.message && err.message.indexOf('Image could not be decoded') !== -1) {
+			// this.$Message.error('该图片无法被解析');
+			currentFileInfo.message = '格式无法解析';
+		}
+		if (err instanceof tinify.ConnectionError || err instanceof tinify.ServerError) {
+			currentFileInfo.message = '压缩失败'
+		} else if (err instanceof tinify.ClientError || err instanceof tinify.AccountError) {
+			if (err.message.indexOf('Your monthly limit has been exceeded') >= 0) {
+				/*该账户数目超过*/
+				// this.$Message.error('今日图片压缩次数已用尽！');
+				currentFileInfo.message = '今日压缩次数达到上限'
+			}
+		} else {
+			currentFileInfo.message = err.message;
+		}
+		currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
+		this.CHANGE_FILE_INFO(currentFileInfo);
 	}
 	selectFile() {
 		if (!this.apiKey) {

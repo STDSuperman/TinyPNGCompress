@@ -28,13 +28,17 @@
                                         class="demo-spin-icon-load"
                                     ></Icon>
                                     <section v-else>
-                                        <div class="success-container" v-if="item.isCache || item.status === 1">
-                                            <Icon type="ios-checkmark" size="30"></Icon>
-                                            <Tooltip content="还原原图" placement="top">
-                                                <Icon @click="restoreOrigin(item)" type="ios-undo" size="22" class="return" color='#ff9900'/>
-                                            </Tooltip>
-                                        </div>
-                                        <Icon v-else type="ios-close" color='#ed4014' size="30"></Icon>
+                                        <div class="restored" v-if="item.isRestore">已还原</div>
+                                        <section v-else>
+                                            <div class="success-container" v-if="item.isCache || item.status === 1">
+                                                <Icon type="ios-checkmark" size="30"></Icon>
+                                                <Tooltip content="还原原图" placement="top">
+                                                    <Icon :color='!item.isRestore ? "#ff9900" : "#ccc"' :class="{'restore-disabled': item.isRestore}" @click="restoreOrigin(item, index)" type="ios-undo" size="22" class="return"/>
+                                                </Tooltip>
+                                            </div>
+                                            <Icon v-else type="ios-close" color='#ed4014' size="30"></Icon>
+                                        </section>
+                                        
                                     </section>
                                 </Spin>
                             </div>
@@ -85,11 +89,16 @@ export default class FileList extends Vue {
         return Object.keys(this.failMap).length;
     }
     // 还原原图
-    async restoreOrigin(item: any) {
+    async restoreOrigin(item: any, index: number) {
+        if (item.isRestore) return;
+        this.$nextTick(() => {
+            this.$set(this.fileList[index], 'isRestore', true);
+        })
         const cacheOriginaldDir = item.originalPicPath;
         if (isFileExisted(cacheOriginaldDir)) {
             fs.writeFileSync(item.path, fs.readFileSync(cacheOriginaldDir));
             this.$Message.success("还原原图成功");
+            this.showModel = false;
         } else {
             this.$Message.error('原图文件不存在');
         }
@@ -132,7 +141,7 @@ export default class FileList extends Vue {
     max-height: 271px;
     overflow: auto;
     text-align: left;
-    padding-top: 8px;;
+    padding-top: 10px;;
     .task-item{
         display: flex;
         justify-content: space-between;
@@ -205,6 +214,12 @@ export default class FileList extends Vue {
                         }
                     }
                 }
+            }
+            .restore-disabled{
+                cursor: not-allowed;
+            }
+            .restored{
+                white-space: nowrap;
             }
         }
     }
