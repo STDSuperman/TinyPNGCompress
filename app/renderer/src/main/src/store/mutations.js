@@ -3,6 +3,21 @@ const Store = window.require('electron-store');
 const store = new Store();
 const path = window.require('path');
 const { ipcRenderer } = window.require('electron');
+import { dirExist, caculateFileHash } from '../utils/index.js';
+const pathModule = window.require('path');
+const fs = window.require('fs');
+
+const init = (state) => {
+    if (!state.cacheDir) return;
+    // 判断缓存目录是否存在
+    if (!dirExist(state.cacheDir)) {
+        fs.mkdirSync(state.cacheDir);
+    }
+    state.cacheCompressedDir = pathModule.resolve(state.cacheDir, 'compressed-picture'); // 创建压缩完的文件缓存目录
+    state.cacheOriginaldDir = pathModule.resolve(state.cacheDir, 'original-picture'); // 创建压缩文件原图的文件目录
+    !dirExist(state.cacheCompressedDir) && fs.mkdirSync(state.cacheCompressedDir);
+    !dirExist(state.cacheOriginaldDir) && fs.mkdirSync(state.cacheOriginaldDir);
+}
 
 export const SET_CACHE_FOLDER = 'SET_CACHE_FOLDER';
 export const SET_REPLACE_STATUS = 'SET_REPLACE_STATUS';
@@ -67,5 +82,42 @@ export default {
             }
         }
         state.fileList.splice(currentFilePos, 1, target);
-    }
+    },
+    // 拿到压缩结果进行一系列处理
+	handleCompressed(state, { resultData, sourceData, path, fileInfo, currentFileInfo }) {
+        console.log(Vue);
+		const { name, ext } = fileInfo;
+		if (state.cacheStatus) {
+			const currentHash = caculateFileHash(resultData);
+			let compressedPicPath, originalPicPath;
+			const setCacheDirPath = () => {
+				compressedPicPath = pathModule.resolve(state.cacheCompressedDir, currentHash + ext); // 压缩图缓存路径
+				originalPicPath = pathModule.resolve(state.cacheOriginaldDir, name + '-tiny-' + currentHash + ext); // 原图缓存路径
+			}
+			setCacheDirPath();
+			if (!dirExist(originalPicPath) || !dirExist(compressedPicPath)) {
+				init(state);
+				setCacheDirPath();
+			}
+			currentFileInfo.originalPicPath = originalPicPath;
+			fs.writeFileSync(originalPicPath, sourceData); // 缓存原图
+			fs.writeFileSync(compressedPicPath, resultData); // 缓存压缩图
+		} else {
+			currentFileInfo.originalPicPath = null; // 未开启缓存则置为空
+		}
+		if (this.replaceStatus) {
+			fs.writeFileSync(path, resultData); // 替换目标图
+		} else {
+			fs.writeFileSync(path.replace(/\./g, '') + '-tiny-' + ext, resultData); // 在目标图位置放置图片
+		}
+		const proportion = Math.ceil(((sourceData.length - resultData.length) / sourceData.length) * 100);
+		const reduceSize = sourceData.length - resultData.length;
+		currentFileInfo.status = 1;
+		currentFileInfo.reduceSize = reduceSize;
+		currentFileInfo.message = `- ${reduceSize / 1000} k（${-proportion}%）`;
+		currentFileInfo.sourceDataBuffer = resultData.toString('base64');
+		currentFileInfo.isRestore = false;
+		this.CHANGE_FILE_INFO(currentFileInfo);
+		// this.$Message.success(`压缩${ base }成功，减少尺寸${ reduceSize }`);
+	}
 }

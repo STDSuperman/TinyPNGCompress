@@ -36,7 +36,10 @@
                                                     <Icon :color='!item.isRestore ? "#ff9900" : "#ccc"' :class="{'restore-disabled': item.isRestore}" @click="restoreOrigin(item, index)" type="ios-undo" size="22" class="return"/>
                                                 </Tooltip>
                                             </div>
-                                            <Icon v-else type="ios-close" color='#ed4014' size="30"></Icon>
+                                            <div class="fail" v-else>
+                                                <Icon type="ios-close" color='#ed4014' size="30"></Icon>
+                                                <Icon class="retry" @click="retryOne(index)" type="ios-refresh" color='#2d8cf0' size="30"></Icon>
+                                            </div>
                                         </section>
                                         
                                     </section>
@@ -126,6 +129,9 @@ export default class FileList extends Vue {
             return require("../assets/logo.png")
         }
     }
+    retryOne(index: number) {
+         this.CHANGE_FILE_INFO({status: 0, message: null, url: null, isCache: false, currentFilePos: index}); // 重新初始化需要压缩的项
+    }
 }
 </script>
 
@@ -208,9 +214,20 @@ export default class FileList extends Vue {
                         margin-left: 10px;
                         margin-top: 5px;
                         cursor: pointer;
+                        transition: all 200ms;
                         &:hover {
-                            transform: scale(1.1);
+                            transform: scale(1.2);
                             transform-origin: center;
+                        }
+                    }
+                }
+                .fail{
+                    display: flex;
+                    .retry{
+                        cursor: pointer;
+                        transition: all 200ms;
+                        &:hover{
+                            transform: scale(1.2);
                         }
                     }
                 }
