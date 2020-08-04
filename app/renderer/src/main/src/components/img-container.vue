@@ -17,6 +17,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { isSpecificImage, isFolder, dirExist, caculateFileHash } from '../utils/index.js';
+import { start } from '../utils/compress.js';
 import { Card } from 'view-design';
 import { State, Mutation } from 'vuex-class';
 const tinify = window.require('tinify');
@@ -79,15 +80,15 @@ export default class ImgContainer extends Vue {
 				setCacheDirPath();
 			}
 			currentFileInfo.originalPicPath = originalPicPath;
-			fs.writeFileSync(originalPicPath, sourceData); // 缓存原图
-			fs.writeFileSync(compressedPicPath, resultData); // 缓存压缩图
+			fs.writeFileSync(originalPicPath, sourceData, {encoding: 'binary'}); // 缓存原图
+			fs.writeFileSync(compressedPicPath, resultData, {encoding: 'binary'}); // 缓存压缩图
 		} else {
 			currentFileInfo.originalPicPath = null; // 未开启缓存则置为空
 		}
 		if (this.replaceStatus) {
-			fs.writeFileSync(path, resultData); // 替换目标图
+			fs.writeFileSync(path, resultData, {encoding: 'binary'}); // 替换目标图
 		} else {
-			fs.writeFileSync(path.replace(/\./g, '') + '-tiny-' + ext, resultData); // 在目标图位置放置图片
+			fs.writeFileSync(path.replace(/\./g, '') + '-tiny-' + ext, resultData, {encoding: 'binary'}); // 在目标图位置放置图片
 		}
 		const proportion = Math.ceil(((sourceData.length - resultData.length) / sourceData.length) * 100);
 		const reduceSize = sourceData.length - resultData.length;
@@ -147,16 +148,22 @@ export default class ImgContainer extends Vue {
 			let currentFileInfo: any = { currentFilePos};
 			const getCompressedImg = () => {
 				return new Promise((resolve) => {
-					tinify.fromBuffer(sourceData).toBuffer((err: any, resultData: BufferSource) => {
-						if (err) {
-							this.handleError(err, currentFileInfo);
-							currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
-							this.CHANGE_FILE_INFO(currentFileInfo);
-						} else {
-							this.handleCompressed(resultData, sourceData, path, fileInfo, currentFileInfo);
-						}
-						resolve();
+					start(path).then((resData: SourceBuffer) => {
+						this.handleCompressed(resData, sourceData, path, fileInfo, currentFileInfo);
 					});
+					resolve();
+					return;
+					// 使用API方式压缩
+					// tinify.fromBuffer(sourceData).toBuffer((err: any, resultData: BufferSource) => {
+					// 	if (err) {
+					// 		this.handleError(err, currentFileInfo);
+					// 		currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
+					// 		this.CHANGE_FILE_INFO(currentFileInfo);
+					// 	} else {
+					// 		this.handleCompressed(resultData, sourceData, path, fileInfo, currentFileInfo);
+					// 	}
+					// 	resolve();
+					// });
 				})
 			}
 			this.setTimeoutError(getCompressedImg, () => {
