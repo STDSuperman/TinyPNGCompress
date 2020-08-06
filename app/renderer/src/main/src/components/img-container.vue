@@ -148,22 +148,24 @@ export default class ImgContainer extends Vue {
 			let currentFileInfo: any = { currentFilePos};
 			const getCompressedImg = () => {
 				return new Promise((resolve) => {
-					start(path).then((resData: SourceBuffer) => {
-						this.handleCompressed(resData, sourceData, path, fileInfo, currentFileInfo);
-					});
-					resolve();
-					return;
-					// 使用API方式压缩
-					// tinify.fromBuffer(sourceData).toBuffer((err: any, resultData: BufferSource) => {
-					// 	if (err) {
-					// 		this.handleError(err, currentFileInfo);
-					// 		currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
-					// 		this.CHANGE_FILE_INFO(currentFileInfo);
-					// 	} else {
-					// 		this.handleCompressed(resultData, sourceData, path, fileInfo, currentFileInfo);
-					// 	}
-					// 	resolve();
+                    // 使用https请求方式压缩
+					// start(path).then((resData: SourceBuffer) => {
+					// 	this.handleCompressed(resData, sourceData, path, fileInfo, currentFileInfo);
 					// });
+					// resolve();
+                    // return;
+                    
+					//使用API方式压缩
+					tinify.fromBuffer(sourceData).toBuffer((err: any, resultData: BufferSource) => {
+						if (err) {
+							this.handleError(err, currentFileInfo);
+							currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
+							this.CHANGE_FILE_INFO(currentFileInfo);
+						} else {
+							this.handleCompressed(resultData, sourceData, path, fileInfo, currentFileInfo);
+						}
+						resolve();
+					});
 				})
 			}
 			this.setTimeoutError(getCompressedImg, () => {
