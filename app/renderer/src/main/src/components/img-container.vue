@@ -17,7 +17,7 @@
 <script lang="ts">
 import { Component, Vue } from 'vue-property-decorator';
 import { isSpecificImage, isFolder, dirExist, caculateFileHash } from '../utils/index.js';
-import { start } from '../utils/compress.js';
+// import { start } from '../utils/compress.js';
 import { Card } from 'view-design';
 import { State, Mutation } from 'vuex-class';
 const tinify = window.require('tinify');
