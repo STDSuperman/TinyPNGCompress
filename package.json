@@ -11,7 +11,8 @@
 		"build": "cd app/renderer/src/main && npm run build",
 		"pack:mac": "npm run build && cross-env NPM_CONFIG_ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder build --mac",
 		"pack:win": "npm run build && cross-env NPM_CONFIG_ELECTRON_MIRROR=http://npm.taobao.org/mirrors/electron/ electron-builder build --win --ia32",
-		"postinstall": "electron-builder install-app-deps"
+		"postinstall": "electron-builder install-app-deps",
+		"publish:win": "electron-builder -p always --win --ia32"
 	},
 	"build": {
 		"appId": "com.yanyusite.tinypngcompress",
@@ -69,7 +70,18 @@
 		},
 		"squirrelWindows": {
 			"iconUrl": "https://raw.githubusercontent.com/dengyaolong/geektime-electron/master/img/icon.ico"
-		}
+		},
+		"publish": [
+			{
+				"provider": "github",
+				"owner": "STDSuperman",
+				"repo": "TinyPNGCompress"
+			}
+		]
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/STDSuperman/TinyPNGCompress.git"
 	},
 	"keywords": [],
 	"author": "陌路",
@@ -78,7 +90,9 @@
 		"about-window": "^1.13.4",
 		"electron-is-dev": "^1.2.0",
 		"electron-localshortcut": "^3.2.1",
+		"electron-log": "^4.2.2",
 		"electron-store": "^5.2.0",
+		"electron-updater": "^4.3.1",
 		"fs-extra": "^9.0.1",
 		"tinify": "^1.6.0-beta.2"
 	},

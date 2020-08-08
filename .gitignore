@@ -8,6 +8,8 @@
 **/app/renderer/pages/main/
 **/release
 TinyPNGCacheDir
+.env
+.env.production
 
 # testing
 /coverage
