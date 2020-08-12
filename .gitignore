@@ -10,6 +10,7 @@
 TinyPNGCacheDir
 .env
 .env.production
+/publish/utils/githubToken.js
 
 # testing
 /coverage
