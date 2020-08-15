@@ -20,7 +20,9 @@ export default {
         ipcRenderer.send('getUserDataPath');
     },
     // 将用户的API_KEY保存进行共享
-    [SAVE_APIKEY_BMOB](context, apiKey) {
+    [SAVE_APIKEY_BMOB]({state}, apiKey) {
+        const data = state.apiKeyList.find(i => i.apiKey === apiKey) || {};
+        if (data.apiKey) return; // 去重
         TinyAPIKey.set('apiKey', apiKey);
         TinyAPIKey.save();
     },
