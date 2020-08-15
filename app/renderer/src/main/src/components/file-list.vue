@@ -64,7 +64,7 @@ import { Vue, Component } from "vue-property-decorator";
 import { Cell, Icon, CellGroup, Spin, Card, Button, Poptip } from "view-design";
 import { State, Mutation } from "vuex-class";
 import { isFileExisted } from '../utils/index.js';
-const fs = window.require('fs')
+const fs = (window as any).require('fs')
 declare var require: any;
 @Component({
     components: {
@@ -77,6 +77,7 @@ export default class FileList extends Vue {
     @State cacheDir: string
     @Mutation CHANGE_FILE_INFO: any;
     showModel: boolean = false;
+    $Message: any;
     get btnText() {
         if (this.fileList.length) {
             let allReduceSize = 0;

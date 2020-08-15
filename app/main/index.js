@@ -14,8 +14,8 @@ if (!getLock) {
 	app.on('ready', () => {
 		createMainWindow();
 		!isDev && autoUpdate()
-		// registerShortcut();
-		// require('./trayAndMenu/index');
+        require('./trayAndMenu/index');
+        registerShortcut();
 	});
 
 	app.on('activate', () => {

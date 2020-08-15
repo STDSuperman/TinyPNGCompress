@@ -15,14 +15,15 @@
 </template>
 
 <script lang="ts">
-import { Component, Vue } from 'vue-property-decorator';
+import { Component, Vue, Watch } from 'vue-property-decorator';
 import { isSpecificImage, isFolder, dirExist, caculateFileHash } from '../utils/index.js';
 // import { start } from '../utils/compress.js';
 import { Card } from 'view-design';
-import { State, Mutation } from 'vuex-class';
+import { State, Mutation, Action } from 'vuex-class';
 const tinify = window.require('tinify');
 const pathModule = window.require('path');
 const fs = window.require('fs');
+let shareApiKeyIdx = 0;
 declare var window: any;
 
 @Component({
@@ -41,14 +42,22 @@ export default class ImgContainer extends Vue {
 	@State apiKey: string;
 	@State cacheDir: string;
 	@State replaceStatus: any;
-	@State cacheStatus: any;
+    @State cacheStatus: any;
+    @State apiKeyList: Array<any>;
 	@Mutation ADD_FILE_INFO: any;
-	@Mutation CHANGE_FILE_INFO: any;
+    @Mutation CHANGE_FILE_INFO: any;
+    @Action DELETE_ERROR_ACCOUNT: any;
+    @Action GET_API_KEY_LIST: any;
 	cacheCompressedDir: string; // 压缩图目录
-	cacheOriginaldDir:string; // 原图目录
+    cacheOriginaldDir:string; // 原图目录
+    myAccountLimit: boolean = false;
 	constructor(props: any) {
 		super(props);
-	}
+    }
+    @Watch('apiKey', {immediate: true})
+    setApiKey(apiKey: string) {
+        tinify.key = apiKey;
+    }
 	$refs: {
 		file: HTMLFormElement;
 		container: HTMLFormElement;
@@ -116,7 +125,6 @@ export default class ImgContainer extends Vue {
 	}
 	// 上传压缩并替换原图片
 	compressImage(path: string, retryIndex: number = -1) {
-		tinify.key = this.apiKey;
 		const sourceData = fs.readFileSync(path);
 		const fileInfo = pathModule.parse(path);
 		const hash = caculateFileHash(sourceData);
@@ -126,26 +134,28 @@ export default class ImgContainer extends Vue {
 		if (this.cacheStatus) {
 			isCache = this.checkCache(hash).isCache;
 		}
-		console.log(originalPicPath);
-		let currentFilePos = retryIndex; // 当前压缩任务在压缩列表中的索引
-		// 添加当前压缩任务到任务列表中,如果是重新压缩失败项则不初始化
-		retryIndex === -1 && this.ADD_FILE_INFO({
-			fileInfo: {
-				filename: fileInfo.base,
-				isCache: isCache,
-				sourceDataBuffer: sourceData.toString('base64'),
-				message: isCache && "命中缓存（请勿重复压缩）",
-				path,
-				originalPicPath
-			},
-			// 获取当前压缩文件任务在fileList中的索引，用于修改异步状态
-			cb: (index: number) => {
-				currentFilePos = index;
-			}
-		});
+        let currentFileInfo = {
+            filename: fileInfo.base,
+            isCache: isCache,
+            sourceDataBuffer: sourceData.toString('base64'),
+            message: isCache && "命中缓存（请勿重复压缩）",
+            path,
+            originalPicPath,
+            currentFilePos: retryIndex,
+            status: 0
+        }
+        if (retryIndex === -1) {
+            // 添加当前压缩任务到任务列表中,如果是重新压缩失败项则不初始化
+            this.ADD_FILE_INFO({
+                fileInfo: currentFileInfo,
+                // 获取当前压缩文件任务在fileList中的索引，用于修改异步状态
+                cb: (index: number) => {
+                    currentFileInfo.currentFilePos = index;
+                }
+            });
+        }
 		// 如果用户关闭了缓存模式则直接退出,返回缓存
 		if (!isCache) {
-			let currentFileInfo: any = { currentFilePos};
 			const getCompressedImg = () => {
 				return new Promise((resolve) => {
                     // 使用https请求方式压缩
@@ -169,7 +179,7 @@ export default class ImgContainer extends Vue {
 				})
 			}
 			this.setTimeoutError(getCompressedImg, () => {
-				this.handleError({message: "压缩超时"}, currentFileInfo);
+                this.handleError({message: "压缩超时"}, currentFileInfo);
 				currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
 				this.CHANGE_FILE_INFO(currentFileInfo);
 			})
@@ -187,24 +197,40 @@ export default class ImgContainer extends Vue {
 		Promise.race([timeoutFunc(), func()]).catch(() => cb());
 	}
 	handleError(err: any, currentFileInfo: any) {
+        this.DELETE_ERROR_ACCOUNT(this.apiKey);
 		if (err.message && err.message.indexOf('Image could not be decoded') !== -1) {
 			// this.$Message.error('该图片无法被解析');
 			currentFileInfo.message = '格式无法解析';
-		}
+        }
+        if (err instanceof tinify.AccountError) {
+            // 如果是自己APIKEY出现错误，需要通知用户修改
+            if(!this.myAccountLimit) {
+                currentFileInfo.message = '您的API_KEY存在异常';
+            }
+            this.DELETE_ERROR_ACCOUNT(tinify.key);
+        }
 		if (err instanceof tinify.ConnectionError || err instanceof tinify.ServerError) {
 			currentFileInfo.message = '压缩失败'
 		} else if (err instanceof tinify.ClientError || err instanceof tinify.AccountError) {
 			if (err.message.indexOf('Your monthly limit has been exceeded') >= 0) {
-				/*该账户数目超过*/
-				// this.$Message.error('今日图片压缩次数已用尽！');
-				currentFileInfo.message = '今日压缩次数达到上限'
+                this.changeApiKey(currentFileInfo);
 			}
 		} else {
 			currentFileInfo.message = err.message;
 		}
 		currentFileInfo.status = 2; // 0: 压缩中,1: 压缩成功,2: 错误
 		this.CHANGE_FILE_INFO(currentFileInfo);
-	}
+    }
+    changeApiKey(info: any) {
+        if (shareApiKeyIdx < this.apiKeyList.length) {
+            const newApiInfo = this.apiKeyList[shareApiKeyIdx++] || {};
+            this.setApiKey(newApiInfo.apiKey);
+            this.compressImage(info.path, info.currentFilePos); //更换API之后重新进行压缩
+        } else {
+            /*所有账户今日可压缩数目都超过*/
+            info.message = '今日压缩次数达到上限';
+        }
+    }
 	selectFile() {
 		if (!this.apiKey) {
 			this.$Message.warning('请先填入API KEY');
@@ -293,7 +319,8 @@ export default class ImgContainer extends Vue {
 			this.compressImage(path, retryIndex)
 		})
 		this.init();
-		this.initDropTarget();
+        this.initDropTarget();
+        this.GET_API_KEY_LIST();
 	}
 }
 </script>

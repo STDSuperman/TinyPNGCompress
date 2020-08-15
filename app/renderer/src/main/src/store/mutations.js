@@ -1,23 +1,10 @@
 import Vue from 'vue';
-const Store = window.require('electron-store');
-const store = new Store();
+import store from './index';
+import { SAVE_APIKEY_BMOB } from './actions';
+const CacheStore = window.require('electron-store');
+const cacheStore = new CacheStore();
 const path = window.require('path');
 const { ipcRenderer } = window.require('electron');
-import { dirExist, caculateFileHash } from '../utils/index.js';
-const pathModule = window.require('path');
-const fs = window.require('fs');
-
-const init = (state) => {
-    if (!state.cacheDir) return;
-    // 判断缓存目录是否存在
-    if (!dirExist(state.cacheDir)) {
-        fs.mkdirSync(state.cacheDir);
-    }
-    state.cacheCompressedDir = pathModule.resolve(state.cacheDir, 'compressed-picture'); // 创建压缩完的文件缓存目录
-    state.cacheOriginaldDir = pathModule.resolve(state.cacheDir, 'original-picture'); // 创建压缩文件原图的文件目录
-    !dirExist(state.cacheCompressedDir) && fs.mkdirSync(state.cacheCompressedDir);
-    !dirExist(state.cacheOriginaldDir) && fs.mkdirSync(state.cacheOriginaldDir);
-}
 
 export const SET_CACHE_FOLDER = 'SET_CACHE_FOLDER';
 export const SET_REPLACE_STATUS = 'SET_REPLACE_STATUS';
@@ -27,46 +14,59 @@ export const CHANGE_FILE_INFO = 'CHANGE_FILE_INFO';
 export const SET_CACHE_STATUS = 'SET_CACHE_STATUS';
 export const LOAD_USER_CONFIG = 'LOAD_USER_CONFIG';
 export const SET_USER_DATA_PATH = 'SET_USER_DATA_PATH';
+export const SET_API_KEY_LIST = 'SET_API_KEY_LIST';
 
 export default {
+    // 加载用户数据
     [LOAD_USER_CONFIG](state) {
-        const userConfig = store.get("userConfig") || {};
+        const userConfig = cacheStore.get("userConfig") || {};
         state.userConfig = userConfig;
         state.userDataPath = ipcRenderer.sendSync('getUserDataPath');
         state.cacheDir = userConfig.cacheDir;
         if (!state.cacheDir) {
             const folder = path.resolve(state.userDataPath, 'TinyPNGCacheDir')
             state.cacheDir = folder;
-            store.set('userConfig.cacheDir', folder);
+            cacheStore.set('userConfig.cacheDir', folder);
         }
         state.replaceStatus = userConfig.replaceStatus === undefined ? true : userConfig.replaceStatus;
         state.cacheStatus = userConfig.cacheStatus === undefined ? true : userConfig.cacheStatus;
         state.apiKey = userConfig.apiKey;
     },
+    // 设置用户数据路径
     [SET_USER_DATA_PATH](state, userDataPath) {
         state.userDataPath = userDataPath;
     },
+    // 设置缓存路径
     [SET_CACHE_FOLDER](state, cacheDir) {
         state.cacheDir = cacheDir;
         const folder = path.resolve(state.userDataPath, cacheDir);
-        store.set('userConfig.cacheDir', folder);
+        cacheStore.set('userConfig.cacheDir', folder);
     },
+    // 设置图片替换状态
     [SET_REPLACE_STATUS](state, replaceStatus) {
         state.replaceStatus = replaceStatus;
-        store.set('userConfig.replaceStatus', replaceStatus);
+        cacheStore.set('userConfig.replaceStatus', replaceStatus);
     },
+    // 设置图片是否已缓存
     [SET_CACHE_STATUS](state, cacheStatus) {
         state.cacheStatus = cacheStatus;
-        store.set('userConfig.cacheStatus', cacheStatus);
+        cacheStore.set('userConfig.cacheStatus', cacheStatus);
     },
+    // 设置压缩API_KEY
     [SET_API_KEY](state, apiKey) {
         state.apiKey = apiKey;
-        store.set('userConfig.apiKey', apiKey);
+        cacheStore.set('userConfig.apiKey', apiKey);
+        store.dispatch(SAVE_APIKEY_BMOB, apiKey);
+    },
+    // 将获取的共享apiKey保存
+    [SET_API_KEY_LIST](state, apiKeyList) {
+        state.apiKeyList = apiKeyList;
     },
     [ADD_FILE_INFO](state, { fileInfo, cb }) {
         cb(state.fileList.length);
         state.fileList.push(fileInfo);
     },
+    // 修改图片列表相关数据
     [CHANGE_FILE_INFO](state, payload) {
         let currentFilePos = payload.currentFilePos;
         const target = state.fileList[currentFilePos];
@@ -82,42 +82,5 @@ export default {
             }
         }
         state.fileList.splice(currentFilePos, 1, target);
-    },
-    // 拿到压缩结果进行一系列处理
-	handleCompressed(state, { resultData, sourceData, path, fileInfo, currentFileInfo }) {
-        console.log(Vue);
-		const { name, ext } = fileInfo;
-		if (state.cacheStatus) {
-			const currentHash = caculateFileHash(resultData);
-			let compressedPicPath, originalPicPath;
-			const setCacheDirPath = () => {
-				compressedPicPath = pathModule.resolve(state.cacheCompressedDir, currentHash + ext); // 压缩图缓存路径
-				originalPicPath = pathModule.resolve(state.cacheOriginaldDir, name + '-tiny-' + currentHash + ext); // 原图缓存路径
-			}
-			setCacheDirPath();
-			if (!dirExist(originalPicPath) || !dirExist(compressedPicPath)) {
-				init(state);
-				setCacheDirPath();
-			}
-			currentFileInfo.originalPicPath = originalPicPath;
-			fs.writeFileSync(originalPicPath, sourceData); // 缓存原图
-			fs.writeFileSync(compressedPicPath, resultData); // 缓存压缩图
-		} else {
-			currentFileInfo.originalPicPath = null; // 未开启缓存则置为空
-		}
-		if (this.replaceStatus) {
-			fs.writeFileSync(path, resultData); // 替换目标图
-		} else {
-			fs.writeFileSync(path.replace(/\./g, '') + '-tiny-' + ext, resultData); // 在目标图位置放置图片
-		}
-		const proportion = Math.ceil(((sourceData.length - resultData.length) / sourceData.length) * 100);
-		const reduceSize = sourceData.length - resultData.length;
-		currentFileInfo.status = 1;
-		currentFileInfo.reduceSize = reduceSize;
-		currentFileInfo.message = `- ${reduceSize / 1000} k（${-proportion}%）`;
-		currentFileInfo.sourceDataBuffer = resultData.toString('base64');
-		currentFileInfo.isRestore = false;
-		this.CHANGE_FILE_INFO(currentFileInfo);
-		// this.$Message.success(`压缩${ base }成功，减少尺寸${ reduceSize }`);
-	}
+    }
 }
