@@ -20,17 +20,16 @@ export default {
         ipcRenderer.send('getUserDataPath');
     },
     // 将用户的API_KEY保存进行共享
-    [SAVE_APIKEY_BMOB]({state}, apiKey) {
+    [SAVE_APIKEY_BMOB]({state}, apiKey = '') {
         const data = state.apiKeyList.find(i => i.apiKey === apiKey) || {};
-        if (data.apiKey) return; // 去重
+        if (data.apiKey || !apiKey.trim()) return; // 去重
         TinyAPIKey.set('apiKey', apiKey);
         TinyAPIKey.save();
     },
-    [GET_API_KEY_LIST]({state, commit}) {
+    [GET_API_KEY_LIST]({commit}) {
         TinyAPIKey.find().then(res => {
             if (res) {
-                const apiKeyList = res.filter(item => item && item.apiKey !== state.apiKey);
-                commit(mutations.SET_API_KEY_LIST, apiKeyList);
+                commit(mutations.SET_API_KEY_LIST, res);
             }
         })
     },

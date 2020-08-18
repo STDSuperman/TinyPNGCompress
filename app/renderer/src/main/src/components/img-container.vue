@@ -222,8 +222,9 @@ export default class ImgContainer extends Vue {
 		this.CHANGE_FILE_INFO(currentFileInfo);
     }
     changeApiKey(info: any) {
-        if (shareApiKeyIdx < this.apiKeyList.length) {
-            const newApiInfo = this.apiKeyList[shareApiKeyIdx++] || {};
+		const canTryKeyList = this.apiKeyList.filter(item => item && item.apiKey !== this.apiKey);
+        if (shareApiKeyIdx < canTryKeyList.length) {
+            const newApiInfo = canTryKeyList[shareApiKeyIdx++] || {};
             this.setApiKey(newApiInfo.apiKey);
             this.compressImage(info.path, info.currentFilePos); //更换API之后重新进行压缩
         } else {
