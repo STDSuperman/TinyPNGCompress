@@ -41,9 +41,9 @@ export default class App extends Vue {}
     border-color: #eee;
     border-radius: 5px;;
     padding: 20px 15px;
-    box-sizing: border-box;;
-    transform: scale(0.95);
+    box-sizing: border-box;
     transform-origin: center center;
+    zoom: .93;
     &::-webkit-scrollbar {
         /*滚动条整体样式*/
         width: 10px; /*高宽分别对应横竖滚动条的尺寸*/
@@ -73,5 +73,8 @@ export default class App extends Vue {}
 }
 body {
     margin: 0px;
+    display: flex;
+    align-items: center;
+    height: 100%;
 }
 </style>

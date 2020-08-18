@@ -8,8 +8,8 @@ let win;
 let willClose = false; // 用于实现用户点击窗口关闭按钮进行隐藏或右键图标进行真正的退出
 function create() {
     win = new BrowserWindow({
-        height: 685,
-        width: 557,
+        height: 620,
+        width: 515,
         webPreferences: {
             nodeIntegration: true
         },

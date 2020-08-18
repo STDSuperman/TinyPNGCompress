@@ -1,7 +1,7 @@
 import * as mutations from './mutations';
 import Bmob from "hydrogen-js-sdk";
-import { SafeKey, SecretKey } from '../utils/sensitive';
-Bmob.initialize(SecretKey, SafeKey);
+// import { SafeKey, SecretKey } from '../utils/sensitive';
+// Bmob.initialize(SecretKey, SafeKey);
 const { ipcRenderer } = window.require('electron');
 const TinyAPIKey = Bmob.Query('TinyAPIKey');
 
