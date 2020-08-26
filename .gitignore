@@ -11,7 +11,7 @@ TinyPNGCacheDir
 .env
 .env.production
 /publish/utils/githubToken.js
-/package.json
+# /package.json
 **/sensitive.js
 
 # testing
